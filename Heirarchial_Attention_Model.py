@@ -31,9 +31,6 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
 
 
-
-
-
 class Attention(Layer):
 	def __init__(self,
 				 W_regularizer=None, b_regularizer=None,
@@ -97,6 +94,21 @@ class Attention(Layer):
 	def compute_output_shape(self, input_shape):
 		return (input_shape[0], input_shape[-1])
 
+def precision(y_true, y_pred):
+
+	true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+	predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+	precision = true_positives / (predicted_positives + K.epsilon())
+	return precision
+
+
+def recall(y_true, y_pred):
+
+	true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+	possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+	recall = true_positives / (possible_positives + K.epsilon())
+	return recall
+
 
 def f1(y_true, y_pred):
 	def recall(y_true, y_pred):
@@ -118,7 +130,7 @@ def f1(y_true, y_pred):
 
 
 
-def ReadFile(filename):
+def ReadFile(filename,start=0,n=10):
 	with open(filename) as tsvfile:
 		reader = csv.reader(tsvfile, delimiter='\t')
 		comments = []
@@ -127,7 +139,7 @@ def ReadFile(filename):
 			comments.append(row[2])
 			labels.append(row[1])
 
-	return comments[1837:1857],labels[1837:1857]
+	return comments[start:start+n],labels[start:start+n]
 
 def CalCount(comments):
 	total = 0
@@ -178,7 +190,7 @@ def PrepModel(count,embedding_matrix,l,lrate=0.001):
 	model.add(Attention())
 	model.add(Dense(1, activation='sigmoid'))
 	# model.compile(optimizer=Adam(lr=lrate), loss='binary_crossentropy', metrics=["accuracy"])
-	model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=["accuracy"])
+	model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=["acc",f1,precision,recall])
 
 
 	print('No of parameter:', model.count_params())
@@ -193,9 +205,10 @@ if __name__ == "__main__":
 	numpy.random.seed(seed)
 	num_epochs=50
 	filename = "dEFEND data/gossipcop_content_no_ignore.tsv"
-
+	print("Enter start index and number of rows:")
+	start,n = map(int,input().split(" "))
 	print("Reading data...")
-	comments,labels = ReadFile(filename)
+	comments,labels = ReadFile(filename,start,n)
 	labels = numpy.array(labels)
 
 	print("Getting word count...")
@@ -217,5 +230,5 @@ if __name__ == "__main__":
 
 	# earlyStopping=keras.callbacks.EarlyStopping(monitor='val_loss', patience=0, verbose=1, mode='auto')
 	model.fit(X_train, y_train, validation_data=(X_val,y_val), verbose=1,nb_epoch=num_epochs,shuffle=True)
-	loss, accuracy = model.evaluate(X_test, y_test, verbose=1)
+	loss, accuracy,f1_score,precision,recall = model.evaluate(X_test, y_test, verbose=1)
 	print('Accuracy: %f' % (accuracy*100))
