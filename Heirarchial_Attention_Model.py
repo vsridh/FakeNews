@@ -3,9 +3,6 @@ import numpy as np
 from numpy import asarray
 from numpy import zeros
 import pandas as pd
-
-numpy.random.seed(1337)
-
 import keras
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -130,7 +127,7 @@ def f1(y_true, y_pred):
 
 
 
-def ReadFile(filename,start=0,n=10):
+def ReadFile(filename):
 	with open(filename) as tsvfile:
 		reader = csv.reader(tsvfile, delimiter='\t')
 		comments = []
@@ -139,7 +136,7 @@ def ReadFile(filename,start=0,n=10):
 			comments.append(row[2])
 			labels.append(row[1])
 
-	return comments[start:start+n],labels[start:start+n]
+	return comments[:],labels[:]
 
 def CalCount(comments):
 	total = 0
@@ -205,10 +202,8 @@ if __name__ == "__main__":
 	numpy.random.seed(seed)
 	num_epochs=50
 	filename = "dEFEND data/gossipcop_content_no_ignore.tsv"
-	print("Enter start index and number of rows:")
-	start,n = map(int,input().split(" "))
 	print("Reading data...")
-	comments,labels = ReadFile(filename,start,n)
+	comments,labels = ReadFile(filename)
 	labels = numpy.array(labels)
 
 	print("Getting word count...")
